@@ -9,12 +9,12 @@ import com.corundumstudio.socketio.listener.DisconnectListener;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
-
 @Slf4j
 @Component
 public class SocketModule {
 
     private final SocketIOServer server;
+
 
     private final SocketService socketService;
 
@@ -27,23 +27,27 @@ public class SocketModule {
         server.addDisconnectListener(onDisconnected());
         server.addEventListener("send_message", Message.class, onChatReceived());
 
-        server.addConnectListener(onConnectedRohit());
-        server.addDisconnectListener(onDisconnectedRohit());
-        server.addEventListener("rohit_send_message", Message.class, onChatReceivedRohit());
-        
+        server.addConnectListener(onConnected2());
+        server.addDisconnectListener(onDisconnected2());
+        server.addEventListener("send_message_2", Message.class, onChatReceived2());
+
     }
 
 
     private DataListener<Message> onChatReceived() {
         return (senderClient, data, ackSender) -> {
-            log.info(data.toString());
-            socketService.sendMessage(data.getRoom(),"get_message", senderClient, data.getMessage());
+
+            synchronized(this) {
+                log.info(data.toString());
+                socketService.sendMessage(data.getRoom(), "get_message", senderClient, data.getMessage());
+            }
         };
     }
 
 
     private ConnectListener onConnected() {
         return (client) -> {
+
             String room = client.getHandshakeData().getSingleUrlParam("room");
             client.joinRoom(room);
             log.info("Socket ID[{}]  Connected to socket", client.getSessionId().toString());
@@ -58,16 +62,17 @@ public class SocketModule {
     }
 
 
-
-    private DataListener<Message> onChatReceivedRohit() {
+    private DataListener<Message> onChatReceived2() {
         return (senderClient, data, ackSender) -> {
-            log.info(data.toString());
-            socketService.sendMessage(data.getRoom(),"rohit_get_message", senderClient, data.getMessage());
+            synchronized(this) {
+                log.info(data.toString());
+                socketService.sendMessage(data.getRoom(), "get_message_2", senderClient, data.getMessage());
+            }
         };
     }
 
 
-    private ConnectListener onConnectedRohit() {
+    private ConnectListener onConnected2() {
         return (client) -> {
             String room = client.getHandshakeData().getSingleUrlParam("room");
             client.joinRoom(room);
@@ -76,9 +81,10 @@ public class SocketModule {
     }
 
 
-    private DisconnectListener onDisconnectedRohit() {
+    private DisconnectListener onDisconnected2() {
         return client -> {
             log.info("Client[{}] - Disconnected from socket", client.getSessionId().toString());
         };
     }
+
 }
